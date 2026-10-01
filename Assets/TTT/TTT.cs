@@ -47,7 +47,7 @@ public class TTT : MonoBehaviour
         int[,] lines =
         {
             { 0, 1, 2 }, { 3, 4, 5 }, { 6, 7, 8 }, //rows
-            { 0, 3, 6 }, {1, 4, 7 }, { 2, 5, 8 }, //columns
+            { 0, 3, 6 }, { 1, 4, 7 }, { 2, 5, 8 }, //columns
             { 0, 4, 8 }, { 2, 4, 6 } //diagonals
         };
 
@@ -60,29 +60,202 @@ public class TTT : MonoBehaviour
 
         List<int> Wins(int p)
         {
-            var outcome = new List<int>();
+            var result = new List<int>();
 
             for (int l = 0; l < 8; l++)
             {
                 int sum = 0;
-                int emptySquare = 0;
+                int emptySquare = -1;
 
                 for (int j = 0; j < 3; j++)
                 {
                     int i = lines[l, j];
                     sum += boardVals[i];
+
                     if (boardVals[i] == 0)
                     {
                         emptySquare = i;
                     }
-                    if (sum == 2 * p && emptySquare >= 0 && !outcome.Contains(emptySquare))
+                }
+
+                if (sum == 2 * p && emptySquare >= 0 && !result.Contains(emptySquare))
+                {
+                    result.Add(emptySquare);
+                }
+            }
+
+            return result;
+        }
+
+        List<int> Forks(int p)
+        {
+            var result = new List<int>();
+
+            for (int i = 0; i < 9; i++)
+            {
+                if (boardVals[i] != 0)
+                {
+                    continue;
+                }
+
+                boardVals[i] = p;
+
+                if (Wins(p).Count > 1)
+                {
+                    result.Add(i);
+                }
+
+                boardVals[i] = 0;
+            }
+
+            return result;
+        }
+
+        int Pick()
+        {
+
+            foreach (int p in new[] { 1, -1 })
+            {
+                var wins = Wins(p);
+
+                if (wins.Count > 0)
+                {
+                    return wins[0];
+                }
+            }
+
+            var forks = Forks(1);
+
+            if (forks.Count > 0)
+            {
+                return forks[0];
+            }
+
+            forks = Forks(-1);
+
+            if (forks.Count == 1)
+            {
+                return forks[0];
+            }
+
+            if (forks.Count > 1)
+            {
+                foreach (int i in bestOrder)
+                {
+                    if (boardVals[i] != 0)
                     {
-                        outcome.Add(emptySquare);
+                        continue;
+                    }
+
+                    boardVals[i] = 1;
+                    var threats = Wins(1);
+                    bool safe;
+
+                    if (threats.Count == 1)
+                    {
+                        int block = threats[0];
+                        boardVals[block] = -1;
+
+                        safe = Wins(-1).Count < 2;
+
+                        boardVals[block] = 0;
+                    }
+                    else
+                    {
+                        safe = Forks(-1).Count == 0;
+                    }
+
+
+                    boardVals[i] = 0;
+
+                    if (safe)
+                    {
+                        return i;
                     }
                 }
             }
-            return outcome;
-        }  
+
+            if (boardVals[4] == 0)
+            {
+                return 4;
+            }
+
+            foreach (int i in new[] { 0, 2, 6, 8 })
+            {
+                if (boardVals[i] == -1 && boardVals[8 - i] == 0)
+                {
+                    return 8 - i;
+                }
+            }
+
+            foreach (int i in bestOrder)
+            {
+                if (boardVals[i] == 0)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        bool open = false;
+
+        for (int i = 0; i < 8; i++)
+        {
+            bool bot = false;
+            bool player = false;
+
+            for (int j = 0; j < 3; j++)
+            {
+                int l = lines[i, j];
+
+                if (boardVals[l] == 1)
+                {
+                    bot = true;
+                }
+
+                if (boardVals[l] == -1)
+                {
+                    player = true;
+                }
+            }
+
+            if (!bot || !player)
+            {
+                open = true;
+                break;
+            }
+        }
+
+        int move = -1;
+
+        if (open)
+        {
+            move = Pick();
+        }
+        else
+        {
+            var empty = new List<int>();
+
+            for (int i = 0; i < 9; i++)
+            {
+                if (boardVals[i] == 0)
+                {
+                    empty.Add(i);
+                }
+            }
+
+            if (empty.Count > 0)
+            {
+                move = empty[UnityEngine.Random.Range(0, empty.Count)];
+            }
+        }
+
+        if (move >= 0)
+        {
+            ChooseSpace(move % 3, move / 3);
+        }
     }
 
     public void ChooseSpace(int column, int row)
