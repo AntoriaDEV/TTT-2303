@@ -37,7 +37,52 @@ public class TTT : MonoBehaviour
 
     public void MakeOptimalMove()
     {
+        if (cells == null || Rows != 3 || Columns != 3 || GetWinner() != PlayerOption.NONE)
+        {
+            return;
+        }
 
+        int[] boardVals = new int[9];
+        int[] bestOrder = { 4, 0, 2, 6, 8, 1, 3, 5, 7 };
+        int[,] lines =
+        {
+            { 0, 1, 2 }, { 3, 4, 5 }, { 6, 7, 8 }, //rows
+            { 0, 3, 6 }, {1, 4, 7 }, { 2, 5, 8 }, //columns
+            { 0, 4, 8 }, { 2, 4, 6 } //diagonals
+        };
+
+        for (int i = 0; i < 9; i++)
+        {
+            var squareOwner = cells[i % 3, i / 3].current;
+
+            boardVals[i] = squareOwner == PlayerOption.NONE ? 0 : squareOwner == currentPlayer ? 1 : -1;
+        }
+
+        List<int> Wins(int p)
+        {
+            var outcome = new List<int>();
+
+            for (int l = 0; l < 8; l++)
+            {
+                int sum = 0;
+                int emptySquare = 0;
+
+                for (int j = 0; j < 3; j++)
+                {
+                    int i = lines[l, j];
+                    sum += boardVals[i];
+                    if (boardVals[i] == 0)
+                    {
+                        emptySquare = i;
+                    }
+                    if (sum == 2 * p && emptySquare >= 0 && !outcome.Contains(emptySquare))
+                    {
+                        outcome.Add(emptySquare);
+                    }
+                }
+            }
+            return outcome;
+        }  
     }
 
     public void ChooseSpace(int column, int row)
